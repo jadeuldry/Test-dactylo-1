@@ -1,130 +1,129 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8">
-<title>Test de dactylographie</title>
-<style>
-  body { font-family: Arial, sans-serif; margin: 30px; }
-  #test-area { width: 100%; font-size: 16px; min-height: 120px; resize: none; }
-  #texteProgressif { font-size: 16px; margin-bottom: 20px; white-space: pre-wrap; }
-  button { margin: 5px; padding: 10px 20px; font-size: 16px; }
-  #timer { font-weight: bold; color: darkred; margin-bottom: 15px; }
-  #result { margin-top: 20px; font-size: 16px; }
-</style>
+  <meta charset="UTF-8">
+  <title>Test de dactylographie</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 30px; }
+    #texte { margin-bottom: 20px; padding: 15px; border: 1px solid #ccc; border-radius: 8px; background: #f9f9f9; }
+    textarea { width: 100%; min-height: 100px; padding: 10px; font-size: 16px; }
+    button { margin-top: 20px; padding: 10px 20px; font-size: 16px; }
+    #timer { font-size: 18px; font-weight: bold; margin-bottom: 20px; }
+  </style>
 </head>
 <body>
-<h2>Test de dactylographie</h2>
-<label>Nom : <input type="text" id="username"></label><br><br>
-<div id="timer">Temps restant : 10:00</div>
-<div id="texteProgressif"></div>
-<textarea id="test-area" placeholder="Commencez à taper ici..."></textarea><br>
-<button onclick="envoyerResultat()">Envoyer vers Google Sheets</button>
-<div id="result"></div>
+  <h1>Test de dactylographie</h1>
+  <div id="timer">Temps restant : 10:00</div>
+  <div id="texte"></div>
+  <textarea id="saisie" placeholder="Commencez à taper ici..." disabled></textarea>
+  <button onclick="envoyer()">Envoyer</button>
+  <p id="status"></p>
 
-<script>
-const TEXTE = `Au jour et à l'heure précités, les hommes du feu ainsi que nos collègues de Police-secours / Police secours / Police Secours sont intervenus en zone foraine pour un incendie dans la halle industrielle de la scierie.
+  <script>
+    const texteRef = [
+      `Au jour et à l'heure précités, les hommes du feu ainsi que nos collègues de Police-secours / Police secours / Police Secours sont intervenus en zone foraine pour un incendie dans la halle industrielle de la scierie.`,
+      `Une fois l'incendie maîtrisé/ maitrisé, par le personnel du SPSL ainsi que celui du SDIS, soit vers vingt heures, plusieurs pompiers sont restés sur les lieux durant la nuit, pour surveiller le sinistre et éviter que le feu ne reprenne.`,
+      `Le procureur de l'arrondissement de Lausanne a été avisé des faits. Il a été renseigné au fur et à mesure de nos investigations.`,
+      `En compagnie de deux inspectrices de la Police cantonale vaudoise, nous nous sommes déplacés le jeudi quatre août, afin d'effectuer un constat technique. Lors de notre second passage, le chien incendie a fait des recherches approfondies sur le site. Celles-ci ont permis d'effectuer des prélèvements de résidus d'incendie.`,
+      `Lors de nos investigations, nous avons procédé à plusieurs auditions. Aucune des personnes n'a vu ou croisé de personne suspecte / personnes suspectes, à proximité de la scierie, le jour en question. Nous résumons leurs déclarations comme suit :`,
+      `Personne un`,
+      `Selon le justificatif de ses heures de présence à son travail, l'intéressé a pu nous certifier être arrivé à 19h45, sur les lieux de l'incendie. C'est en arrivant vers le restaurant situé à proximité de la scierie, qu'il a aperçu au fond du parc, des flammes proches du bâtiment de la scierie, à l'extérieur de la halle industrielle. Il a clairement vu que les flammes se trouvaient à environ deux mètres de la façade. Après un aller-retour au dépôt des pompiers, il est revenu sur les lieux de l'incendie et a constaté que les flammes s'étaient propagées à la paroi et avaient pris de la hauteur.`,
+      `Personne deux`,
+      `L'intéressé dispose d'un atelier en face de la scierie. Selon lui et la copie de la carte de timbrage de son amie, il a quitté son travail à 19h15 pour aller la chercher, à son travail. En sortant du bureau, il a vu des flammes qui se situaient derrière le local technique de la scierie. Depuis son emplacement, il ne voyait pas le foyer mais uniquement les flammes qui passaient au-dessus dudit local. Il ne s'est pas trop inquiété de la situation, pensant qu'un employé devait être à proximité. Selon lui, les flammes ne touchaient pas la paroi du bâtiment principal mais devaient être à une distance estimée à trois mètres. En rentrant à son domicile, soit environ trente minutes plus tard, il n'a rien constaté de spécial. Il n'a pas vu si les flammes étaient toujours actives.`
+    ];
 
-Une fois l'incendie maîtrisé/maitrisé, par le personnel du SPSL ainsi que celui du SDIS, soit vers vingt heures, plusieurs pompiers sont restés sur les lieux durant la nuit, pour surveiller le sinistre et éviter que le feu ne reprenne.
+    let index = 0;
+    let chrono;
+    let tempsRestant = 600; // 10 minutes
+    let started = false;
 
-Le procureur de l'arrondissement de Lausanne a été avisé des faits. Il a été renseigné au fur et à mesure de nos investigations.
+    const zoneTexte = document.getElementById("texte");
+    const saisie = document.getElementById("saisie");
+    const timerEl = document.getElementById("timer");
+    zoneTexte.innerText = texteRef[index];
 
-En compagnie de deux inspectrices de la Police cantonale vaudoise, nous nous sommes déplacés le jeudi quatre août, afin d'effectuer un constat technique. Lors de notre second passage, le chien incendie a fait des recherches approfondies sur le site. Celles-ci ont permis d'effectuer des prélèvements de résidus d'incendie.
+    function demarrerChrono() {
+      if (started) return;
+      started = true;
+      saisie.disabled = false;
+      chrono = setInterval(() => {
+        tempsRestant--;
+        let min = Math.floor(tempsRestant / 60);
+        let sec = tempsRestant % 60;
+        timerEl.innerText = `Temps restant : ${min}:${sec < 10 ? "0" + sec : sec}`;
 
-Lors de nos investigations, nous avons procédé à plusieurs auditions. Aucune des personnes n'a vu ou croisé de personne suspecte / personnes suspectes, à proximité de la scierie, le jour en question. Nous résumons leurs déclarations comme suit :
+        if (tempsRestant === 60) {
+          saisie.style.minHeight = "300px"; // agrandit la case à 1 minute de la fin
+        }
 
-Personne un
-Selon le justificatif de ses heures de présence à son travail, l'intéressé a pu nous certifier être arrivé à 19h45, sur les lieux de l'incendie. C'est en arrivant vers le restaurant situé à proximité de la scierie, qu'il a aperçu au fond du parc, des flammes proches du bâtiment de la scierie, à l'extérieur de la halle industrielle. Il a clairement vu que les flammes se trouvaient à environ deux mètres de la façade. Après un aller-retour au dépôt des pompiers, il est revenu sur les lieux de l'incendie et ...
-
-Personne deux
-L'intéressé dispose d'un atelier en face de la scierie. Selon lui et la copie de la carte de timbrage de son amie, il a quitté son travail à 19h15 pour aller la chercher, à son travail. En sortant du bureau, il a vu des flammes qui se situaient derrière le local technique de la scierie. Depuis son emplacement, il ne voyait pas le foyer mais uniquement les flammes qui passaient au-dessus dudit local. Il ne s'est pas trop inquiété de la situation, pensant qu'un employé devait être à proximité. Selon lui, les flammes ne touchaient pas la paroi du bâtiment principal mais devaient être à une distance estimée à trois mètres. En rentrant à son domicile, soit environ trente minutes plus tard, il n'a rien constaté de spécial. Il n'a pas vu si les flammes étaient toujours actives.
-`;
-
-const paragraphes = TEXTE.split("\n\n");
-let indexParagraphe = 0;
-const texteProgressifDiv = document.getElementById("texteProgressif");
-texteProgressifDiv.innerText = paragraphes[indexParagraphe];
-
-const zone = document.getElementById("test-area");
-let timerDemarre = false;
-let tempsRestant = 600;
-const timerDiv = document.getElementById("timer");
-let interval;
-
-function demarrerTimer() {
-  if (!timerDemarre) {
-    timerDemarre = true;
-    interval = setInterval(() => {
-      tempsRestant--;
-      const minutes = String(Math.floor(tempsRestant/60)).padStart(2,"0");
-      const secondes = String(tempsRestant%60).padStart(2,"0");
-      timerDiv.innerText = `Temps restant : ${minutes}:${secondes}`;
-      if (tempsRestant <= 0) { clearInterval(interval); zone.disabled = true; afficherResultats(); }
-    },1000);
-  }
-}
-
-zone.addEventListener("input", () => {
-  zone.style.height = "auto";
-  zone.style.height = zone.scrollHeight + "px";
-  demarrerTimer();
-  if(zone.value.endsWith(paragraphes[indexParagraphe].slice(-1))){
-    indexParagraphe++;
-    if(indexParagraphe < paragraphes.length){
-      texteProgressifDiv.innerText += "\n\n" + paragraphes[indexParagraphe];
+        if (tempsRestant <= 0) {
+          clearInterval(chrono);
+          envoyer();
+        }
+      }, 1000);
     }
-  }
-});
 
-function calculerPenalites() {
-  const lignesAttendu = TEXTE.split("\n");
-  const lignesSaisie = zone.value.split("\n");
-  let penalites = 0;
-  let lignesConsecutivesManquees = 0;
-  lignesAttendu.forEach((ligneAttendue,i)=>{
-    const ligneSaisie = lignesSaisie[i] || "";
-    if(!ligneSaisie.trim()){
-      penalites+=5; lignesConsecutivesManquees++; if(lignesConsecutivesManquees>=2) penalites+=5; return;
-    } else lignesConsecutivesManquees=0;
-    const motsAttendus = ligneAttendue.split(" ");
-    const motsSaisis = ligneSaisie.split(" ");
-    let penalitesMots = 0;
-    motsAttendus.forEach((mot,j)=>{ if(!motsSaisis[j] || motsSaisis[j]!==mot) penalitesMots++; });
-    penalites += Math.min(5, penalitesMots);
-    const maxLength = Math.max(ligneAttendue.length, ligneSaisie.length);
-    for(let k=0;k<maxLength;k++){ if(ligneAttendue[k]!==ligneSaisie[k]) penalites++; }
-  });
-  const totalFrappe = zone.value.length;
-  const pourcentage = ((penalites*100)/totalFrappe).toFixed(2);
-  let mention="NC";
-  if(pourcentage==0) mention="E";
-  else if(pourcentage<=0.13) mention="TB";
-  else if(pourcentage<=0.25) mention="B";
-  else if(pourcentage<=0.38) mention="AB";
-  else if(pourcentage<=0.50) mention="S";
-  return {penalites, pourcentage, mention, frappe: totalFrappe};
-}
+    saisie.addEventListener("input", () => {
+      demarrerChrono();
+      if (saisie.value.endsWith("\n")) {
+        index++;
+        if (index < texteRef.length) {
+          zoneTexte.innerText = texteRef[index];
+          saisie.value = "";
+        }
+      }
+    });
 
-function afficherResultats(){
-  const r = calculerPenalites();
-  document.getElementById("result").innerText = 
-    `Frappe : ${r.frappe}, Pénalités : ${r.penalites}, % : ${r.pourcentage}, Mention : ${r.mention}`;
-}
+    function calculerPenalites(reference, saisi) {
+      let penalites = 0;
+      const refPartiel = reference.substring(0, saisi.length);
 
-function envoyerResultat(){
-  const nom = document.getElementById("username").value.trim();
-  if(!nom){ alert("Veuillez entrer votre nom."); return; }
-  const r = calculerPenalites();
-  fetch("https://script.google.com/macros/s/AKfycbx55SWLT8lAFiTeTWENPDxOc5XJBOEViBhEv8qVSiO1-Zq1sg0-HqjhlCkEdFpTpPtn/exec", {
-    method: "POST",
-    mode: "no-cors",
-    headers: {"Content-Type":"application/json"},
-    body: JSON.stringify({nom: nom, frappes: r.frappe, penalites: r.penalites, pourcentage: r.pourcentage, mention: r.mention})
-  })
-  .then(()=>{ alert("Résultats envoyés !"); })
-  .catch(err=>{ alert("Erreur envoi: "+err); });
-}
-</script>
+      for (let i = 0; i < saisi.length; i++) {
+        if (saisi[i] !== refPartiel[i]) {
+          penalites++;
+        }
+      }
+      return penalites;
+    }
+
+    function envoyer() {
+      clearInterval(chrono);
+      let texteTape = saisie.value.trim();
+      let texteAttendu = texteRef.join("\n");
+      let penalites = calculerPenalites(texteAttendu, texteTape);
+      let totalFrappe = texteTape.length;
+      let pourcentage = totalFrappe > 0 ? ((penalites * 100) / totalFrappe).toFixed(2) : 0;
+
+      // Détermination de la mention
+      let mention = "NC";
+      if (pourcentage == 0) mention = "E";
+      else if (pourcentage <= 0.13) mention = "TB";
+      else if (pourcentage <= 0.25) mention = "B";
+      else if (pourcentage <= 0.38) mention = "AB";
+      else if (pourcentage <= 0.50) mention = "S";
+      else mention = "NC";
+
+      const data = {
+        texteTape,
+        penalites,
+        totalFrappe,
+        pourcentage,
+        mention,
+        tempsUtilise: 600 - tempsRestant
+      };
+
+      fetch("https://script.google.com/macros/s/AKfycbxXhszJE-OEUe3yAdHpT6JdwyD_qJKc_vC3JnMnmsktvFKMpr3G7g_d8Nk_58oG9rpB/exec", {
+        method: "POST",
+        body: JSON.stringify(data),
+        headers: { "Content-Type": "application/json" }
+      })
+      .then(res => res.text())
+      .then(txt => document.getElementById("status").innerText = "Résultats envoyés ✅")
+      .catch(err => document.getElementById("status").innerText = "Erreur envoi ❌ " + err);
+    }
+  </script>
 </body>
 </html>
+
 
 
