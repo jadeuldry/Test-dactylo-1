@@ -5,12 +5,12 @@
 <title>Test de dactylographie</title>
 <style>
 body { font-family: Arial, sans-serif; margin: 20px; }
-#texte-container { font-style: italic; color: #555; margin-bottom: 15px; white-space: pre-line; }
+#texte-container { margin-bottom: 15px; white-space: pre-wrap; }
+#ligne-active { background-color: #e0f7fa; padding: 5px; margin-bottom: 5px; }
 input, textarea { width: 100%; font-size: 16px; margin-bottom: 10px; padding: 5px; }
 button { padding: 10px 20px; font-size: 16px; margin-top: 10px; }
 #resultat { margin-top: 20px; font-weight: bold; }
 #chrono { font-weight: bold; color: red; margin-bottom: 10px; }
-.active-line { background-color: #e0f7fa; }
 </style>
 </head>
 <body>
@@ -36,22 +36,23 @@ L'intéressé dispose d'un atelier en face de la scierie. Selon lui et la copie 
 
 const lignes = TEXTE_COMPLET.split('\n');
 const texteContainer = document.getElementById('texte-container');
+const zoneSaisie = document.getElementById('zone-saisie');
 let ligneIndex = 0;
-let chrono = 600; // 10 minutes en secondes
+let chrono = 600;
 let timer = null;
 let debut = null;
 
-function afficherLigne() {
+function afficherTexte(){
   texteContainer.innerHTML = '';
   for(let i=0;i<=ligneIndex;i++){
-    let span = document.createElement('div');
-    span.innerText = lignes[i];
-    if(i===ligneIndex) span.classList.add('active-line');
-    texteContainer.appendChild(span);
+    const div = document.createElement('div');
+    div.innerText = lignes[i];
+    if(i===ligneIndex) div.id="ligne-active";
+    texteContainer.appendChild(div);
   }
 }
 
-function demarrerChrono() {
+function demarrerChrono(){
   if(debut) return;
   debut = Date.now();
   timer = setInterval(()=>{
@@ -62,61 +63,55 @@ function demarrerChrono() {
     if(chrono<=0){
       clearInterval(timer);
       alert('Temps écoulé !');
-      document.getElementById('zone-saisie').disabled = true;
+      zoneSaisie.disabled = true;
     }
   },1000);
 }
 
-document.getElementById('zone-saisie').addEventListener('input',()=>{
+zoneSaisie.addEventListener('input', ()=>{
   demarrerChrono();
-  const ligneActive = lignes[ligneIndex];
-  const texteSaisi = document.getElementById('zone-saisie').value;
-  if(texteSaisi.length >= ligneActive.length){
+  if(zoneSaisie.value.length >= lignes[ligneIndex].length){
     ligneIndex = Math.min(ligneIndex+1, lignes.length-1);
-    document.getElementById('zone-saisie').value = '';
-    afficherLigne();
+    zoneSaisie.value = '';
+    afficherTexte();
   }
 });
 
-afficherLigne();
+afficherTexte();
 
+// Fonction de calcul des pénalités (basé sur texte tapé)
 function calculerPenalites(texteTape, texteAttendu){
   const lignesTapees = texteTape.split('\n');
   const lignesAttendu = texteAttendu.split('\n');
   let penalites=0;
-  let lignesManquees = 0;
 
   for(let i=0;i<lignesTapees.length;i++){
     const ligneS = lignesTapees[i];
     const ligneA = lignesAttendu[i] || "";
-
     const motsS = ligneS.split(/\s+/);
     const motsA = ligneA.split(/\s+/);
-    let penalitesLigne = 0;
+    let penalitesLigne=0;
 
     for(let j=0;j<Math.max(motsS.length,motsA.length);j++){
       const motS = motsS[j]||"";
       const motA = motsA[j]||"";
-      if(motS !== motA){
+      if(motS!==motA){
         penalitesLigne++;
-        const len = Math.min(motS.length,motA.length);
+        const len=Math.min(motS.length,motA.length);
         for(let k=0;k<len;k++) if(motS[k]!==motA[k]) penalitesLigne++;
         penalitesLigne += Math.abs(motS.length-motA.length);
       }
     }
     penalites += Math.min(5, penalitesLigne);
-    if(!ligneS || ligneS.trim()==="") lignesManquees++;
   }
-
-  if(lignesManquees===1) penalites+=5;
-  else if(lignesManquees>=2) penalites+=10;
 
   return penalites;
 }
 
+// Envoi vers Google Sheets
 async function envoyer(){
   const nom = document.getElementById('nom').value.trim()||'Anonyme';
-  const texteSaisi = document.getElementById('zone-saisie').value;
+  const texteSaisi = zoneSaisie.value;
   const totalFrappe = texteSaisi.length;
   const penalites = calculerPenalites(texteSaisi,TEXTE_COMPLET);
   const pourcentage = totalFrappe>0?((penalites/totalFrappe)*100).toFixed(2):0;
@@ -127,8 +122,9 @@ async function envoyer(){
   else if(pourcentage>0.14) mention="B";
   else if(pourcentage>0.01) mention="TB";
 
-  document.getElementById('resultat').innerText=`Nom: ${nom}, Frappe: ${totalFrappe}, Pénalités: ${penalites}, % erreur: ${pourcentage}%, Mention: ${mention}`;
-  
+  document.getElementById('resultat').innerText=
+    `Nom: ${nom}, Frappe: ${totalFrappe}, Pénalités: ${penalites}, % erreur: ${pourcentage}%, Mention: ${mention}`;
+
   try{
     await fetch('https://script.google.com/macros/s/AKfycbxXhszJE-OEUe3yAdHpT6JdwyD_qJKc_vC3JnMnmsktvFKMpr3G7g_d8Nk_58oG9rpB/exec',{
       method:'POST',
