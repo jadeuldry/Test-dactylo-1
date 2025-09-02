@@ -1,119 +1,154 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <title>Test de dactylographie</title>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    #texte-reference { margin-bottom: 20px; font-style: italic; color: #555; white-space: pre-line; }
-    input, textarea { width: 100%; font-size: 16px; margin-bottom: 10px; padding: 5px; }
-    button { margin-top: 15px; padding: 10px 20px; font-size: 16px; }
-    #resultat { margin-top: 20px; font-weight: bold; }
-  </style>
+<meta charset="UTF-8">
+<title>Test de dactylographie</title>
+<style>
+body { font-family: Arial, sans-serif; margin: 20px; }
+#texte-container { font-style: italic; color: #555; margin-bottom: 15px; white-space: pre-line; }
+input, textarea { width: 100%; font-size: 16px; margin-bottom: 10px; padding: 5px; }
+button { padding: 10px 20px; font-size: 16px; margin-top: 10px; }
+#resultat { margin-top: 20px; font-weight: bold; }
+#chrono { font-weight: bold; color: red; margin-bottom: 10px; }
+.active-line { background-color: #e0f7fa; }
+</style>
 </head>
 <body>
 
-  <h1>Exercice de frappe</h1>
+<h1>Test de dactylographie</h1>
+<input type="text" id="nom" placeholder="Entrez votre prénom">
+<div id="chrono">Temps restant : 10:00</div>
+<div id="texte-container"></div>
+<textarea id="zone-saisie" placeholder="Tapez ici la ligne active..."></textarea>
+<button onclick="envoyer()">Envoyer vers Google Sheets</button>
+<p id="resultat"></p>
 
-  <input type="text" id="nom" placeholder="Entrez votre nom">
-
-  <p id="texte-reference">
-Au jour et à l'heure précités, les hommes du feu ainsi que nos collègues de Police-secours / Police secours / Police Secours sont intervenus en zone foraine pour un incendie dans la halle industrielle de la scierie.
+<script>
+const TEXTE_COMPLET = `Au jour et à l'heure précités, les hommes du feu ainsi que nos collègues de Police-secours / Police secours / Police Secours sont intervenus en zone foraine pour un incendie dans la halle industrielle de la scierie.
 Une fois l'incendie maîtrisé / maitrisé, par le personnel du SPSL ainsi que celui du SDIS, soit vers vingt heures, plusieurs pompiers sont restés sur les lieux durant la nuit, pour surveiller le sinistre et éviter que le feu ne reprenne.
 Le procureur de l'arrondissement de Lausanne a été avisé des faits. Il a été renseigné au fur et à mesure de nos investigations.
 En compagnie de deux inspectrices de la Police cantonale vaudoise, nous nous sommes déplacés le jeudi quatre août, afin d'effectuer un constat technique. Lors de notre second passage, le chien incendie a fait des recherches approfondies sur le site. Celles-ci ont permis d'effectuer des prélèvements de résidus d'incendie.
 Lors de nos investigations, nous avons procédé à plusieurs auditions. Aucune des personnes n'a vu ou croisé de personne suspecte / personnes suspectes, à proximité de la scierie, le jour en question. Nous résumons leurs déclarations comme suit :
 Personne un
+Selon le justificatif de ses heures de présence à son travail, l'intéressé a pu nous certifier être arrivé à 19h45, sur les lieux de l'incendie. C'est en arrivant vers le restaurant situé à proximité de la scierie, qu'il a aperçu au fond du parc, des flammes proches du bâtiment de la scierie, à l'extérieur de la halle industrielle. Il a clairement vu que les flammes se trouvaient à environ deux mètres de la façade. Après un aller-retour au dépôt des pompiers, il est revenu sur les lieux de l'incendie et a constaté que les flammes s'étaient propagées à la paroi et avaient pris de la hauteur.
 Personne deux
-L'intéressé dispose d'un atelier en face de la scierie. Selon lui et la copie de la carte de timbrage de son amie, il a quitté son travail à 19h15 pour aller la chercher, à son travail. En sortant du bureau, il a vu des flammes qui se situaient derrière le local technique de la scierie. Depuis son emplacement, il ne voyait pas le foyer mais uniquement les flammes qui passaient au-dessus dudit local. Il ne s'est pas trop inquiété de la situation, pensant qu'un employé devait être à proximité. Selon lui, les flammes ne touchaient pas la paroi du bâtiment principal mais devaient être à une distance estimée à trois mètres. En rentrant à son domicile, soit environ trente minutes plus tard, il n'a rien constaté de spécial. Il n'a pas vu si les flammes étaient toujours actives.
-  </p>
+L'intéressé dispose d'un atelier en face de la scierie. Selon lui et la copie de la carte de timbrage de son amie, il a quitté son travail à 19h15 pour aller la chercher, à son travail. En sortant du bureau, il a vu des flammes qui se situaient derrière le local technique de la scierie. Depuis son emplacement, il ne voyait pas le foyer mais uniquement les flammes qui passaient au-dessus dudit local. Il ne s'est pas trop inquiété de la situation, pensant qu'un employé devait être à proximité. Selon lui, les flammes ne touchaient pas la paroi du bâtiment principal mais devaient être à une distance estimée à trois mètres. En rentrant à son domicile, soit environ trente minutes plus tard, il n'a rien constaté de spécial. Il n'a pas vu si les flammes étaient toujours actives.`;
 
-  <textarea id="zone-saisie" placeholder="Tape ici le texte..."></textarea><br>
-  <button onclick="terminer()">Envoyer le résultat</button>
+const lignes = TEXTE_COMPLET.split('\n');
+const texteContainer = document.getElementById('texte-container');
+let ligneIndex = 0;
+let chrono = 600; // 10 minutes en secondes
+let timer = null;
+let debut = null;
 
-  <p id="resultat"></p>
+function afficherLigne() {
+  texteContainer.innerHTML = '';
+  for(let i=0;i<=ligneIndex;i++){
+    let span = document.createElement('div');
+    span.innerText = lignes[i];
+    if(i===ligneIndex) span.classList.add('active-line');
+    texteContainer.appendChild(span);
+  }
+}
 
-  <script>
-    const TEXTE_ATTENDU = document.getElementById("texte-reference").innerText.trim();
-    let debut = Date.now();
-
-    function calculerPenalitesAvancees(saisi, attendu) {
-      let penalites = 0;
-      const lignesSaisies = saisi.split("\n");
-      const lignesAttendues = attendu.split("\n");
-      let lignesRatees = 0;
-
-      for (let i = 0; i < Math.max(lignesSaisies.length, lignesAttendues.length); i++) {
-        const ligneSaisie = lignesSaisies[i] || "";
-        const ligneAttendue = lignesAttendues[i] || "";
-
-        if (!ligneSaisie || !ligneAttendue) { lignesRatees++; continue; }
-        if (ligneSaisie === ligneAttendue) continue;
-
-        let lignePenalites = 0;
-        const motsSaisis = ligneSaisie.split(/\s+/);
-        const motsAttendus = ligneAttendue.split(/\s+/);
-
-        for (let j = 0; j < Math.max(motsSaisis.length, motsAttendus.length); j++) {
-          const motSaisi = motsSaisis[j] || "";
-          const motAttendu = motsAttendus[j] || "";
-          if (motSaisi !== motAttendu) {
-            lignePenalites++;
-            const len = Math.min(motSaisi.length, motAttendu.length);
-            for (let k = 0; k < len; k++) if (motSaisi[k] !== motAttendu[k]) lignePenalites++;
-            lignePenalites += Math.abs(motSaisi.length - motAttendu.length);
-          }
-        }
-
-        penalites += Math.min(5, lignePenalites);
-      }
-
-      if (lignesRatees === 1) penalites += 5;
-      else if (lignesRatees >= 2) penalites += 10;
-
-      return penalites;
+function demarrerChrono() {
+  if(debut) return;
+  debut = Date.now();
+  timer = setInterval(()=>{
+    chrono--;
+    let min = Math.floor(chrono/60).toString().padStart(2,'0');
+    let sec = (chrono%60).toString().padStart(2,'0');
+    document.getElementById('chrono').innerText = `Temps restant : ${min}:${sec}`;
+    if(chrono<=0){
+      clearInterval(timer);
+      alert('Temps écoulé !');
+      document.getElementById('zone-saisie').disabled = true;
     }
+  },1000);
+}
 
-    async function terminer() {
-      const nom = document.getElementById("nom").value.trim() || "Anonyme";
-      const texteSaisi = document.getElementById("zone-saisie").value;
-      const tempsUtilise = Math.round((Date.now() - debut) / 1000);
-      const totalFrappe = texteSaisi.length;
+document.getElementById('zone-saisie').addEventListener('input',()=>{
+  demarrerChrono();
+  const ligneActive = lignes[ligneIndex];
+  const texteSaisi = document.getElementById('zone-saisie').value;
+  if(texteSaisi.length >= ligneActive.length){
+    ligneIndex = Math.min(ligneIndex+1, lignes.length-1);
+    document.getElementById('zone-saisie').value = '';
+    afficherLigne();
+  }
+});
 
-      const penalites = calculerPenalitesAvancees(texteSaisi, TEXTE_ATTENDU);
-      const pourcentage = totalFrappe > 0 ? ((penalites / totalFrappe) * 100).toFixed(2) : 0;
+afficherLigne();
 
-      let mention = "Excellent";
-      if (pourcentage > 10) mention = "Insuffisant";
-      else if (pourcentage > 5) mention = "Moyen";
-      else if (pourcentage > 2) mention = "Bien";
+function calculerPenalites(texteTape, texteAttendu){
+  const lignesTapees = texteTape.split('\n');
+  const lignesAttendu = texteAttendu.split('\n');
+  let penalites=0;
+  let lignesManquees = 0;
 
-      document.getElementById("resultat").innerText =
-        `Nom: ${nom}, Frappe: ${totalFrappe}, Pénalités: ${penalites}, Erreurs: ${pourcentage}%, Mention: ${mention}`;
+  for(let i=0;i<lignesTapees.length;i++){
+    const ligneS = lignesTapees[i];
+    const ligneA = lignesAttendu[i] || "";
 
-      try {
-        const response = await fetch("https://script.google.com/macros/s/AKfycbxXhszJE-OEUe3yAdHpT6JdwyD_qJKc_vC3JnMnmsktvFKMpr3G7g_d8Nk_58oG9rpB/exec", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            nom: nom,
-            texteTape: texteSaisi,
-            penalites: penalites,
-            totalFrappe: totalFrappe,
-            pourcentage: pourcentage,
-            mention: mention,
-            tempsUtilise: tempsUtilise
-          })
-        });
+    const motsS = ligneS.split(/\s+/);
+    const motsA = ligneA.split(/\s+/);
+    let penalitesLigne = 0;
 
-        const data = await response.json();
-        if (data.status === "ok") alert("Résultat envoyé avec succès !");
-        else alert("Erreur envoi: " + data.message);
-      } catch (err) {
-        alert("Erreur envoi: " + err);
+    for(let j=0;j<Math.max(motsS.length,motsA.length);j++){
+      const motS = motsS[j]||"";
+      const motA = motsA[j]||"";
+      if(motS !== motA){
+        penalitesLigne++;
+        const len = Math.min(motS.length,motA.length);
+        for(let k=0;k<len;k++) if(motS[k]!==motA[k]) penalitesLigne++;
+        penalitesLigne += Math.abs(motS.length-motA.length);
       }
     }
-  </script>
+    penalites += Math.min(5, penalitesLigne);
+    if(!ligneS || ligneS.trim()==="") lignesManquees++;
+  }
+
+  if(lignesManquees===1) penalites+=5;
+  else if(lignesManquees>=2) penalites+=10;
+
+  return penalites;
+}
+
+async function envoyer(){
+  const nom = document.getElementById('nom').value.trim()||'Anonyme';
+  const texteSaisi = document.getElementById('zone-saisie').value;
+  const totalFrappe = texteSaisi.length;
+  const penalites = calculerPenalites(texteSaisi,TEXTE_COMPLET);
+  const pourcentage = totalFrappe>0?((penalites/totalFrappe)*100).toFixed(2):0;
+  let mention="Excellent";
+  if(pourcentage>0.51) mention="NC";
+  else if(pourcentage>0.39) mention="S";
+  else if(pourcentage>0.26) mention="AB";
+  else if(pourcentage>0.14) mention="B";
+  else if(pourcentage>0.01) mention="TB";
+
+  document.getElementById('resultat').innerText=`Nom: ${nom}, Frappe: ${totalFrappe}, Pénalités: ${penalites}, % erreur: ${pourcentage}%, Mention: ${mention}`;
+  
+  try{
+    await fetch('https://script.google.com/macros/s/AKfycbxXhszJE-OEUe3yAdHpT6JdwyD_qJKc_vC3JnMnmsktvFKMpr3G7g_d8Nk_58oG9rpB/exec',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        nom:nom,
+        texteTape:texteSaisi,
+        totalFrappe:totalFrappe,
+        penalites:penalites,
+        pourcentage:pourcentage,
+        mention:mention,
+        horodatage:new Date().toISOString()
+      })
+    });
+    alert('Résultat envoyé !');
+  }catch(err){
+    alert('Erreur envoi: '+err);
+  }
+}
+</script>
 
 </body>
 </html>
