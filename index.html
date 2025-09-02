@@ -20,6 +20,7 @@
 <textarea id="test-area" placeholder="Commencez à taper ici..."></textarea><br>
 <button onclick="envoyerResultat()">Envoyer vers Google Sheets</button>
 <div id="result"></div>
+
 <script>
 const TEXTE = `Au jour et à l'heure précités, les hommes du feu ainsi que nos collègues de Police-secours / Police secours / Police Secours sont intervenus en zone foraine pour un incendie dans la halle industrielle de la scierie.
 
@@ -32,10 +33,11 @@ En compagnie de deux inspectrices de la Police cantonale vaudoise, nous nous som
 Lors de nos investigations, nous avons procédé à plusieurs auditions. Aucune des personnes n'a vu ou croisé de personne suspecte / personnes suspectes, à proximité de la scierie, le jour en question. Nous résumons leurs déclarations comme suit :
 
 Personne un
-Selon le justificatif de ses heures de présence à son travail, l'intéressé a pu nous certifier être arrivé à 19h45, sur les lieux de l'incendie. C'est en arrivant vers le restaurant situé à proximité de la scierie, qu'il a aperçu au fond du parc, des flammes proches du bâtiment de la scierie, à l'extérieur de la halle industrielle. Il a clairement vu que les flammes se trouvaient à environ deux mètres de la façade. Après un aller-retour au dépôt des pompiers, il est revenu sur les lieux de l'incendie et a constaté que les flammes s'étaient propagées à la paroi et avaient pris de la hauteur.
+Selon le justificatif de ses heures de présence à son travail, l'intéressé a pu nous certifier être arrivé à 19h45, sur les lieux de l'incendie. C'est en arrivant vers le restaurant situé à proximité de la scierie, qu'il a aperçu au fond du parc, des flammes proches du bâtiment de la scierie, à l'extérieur de la halle industrielle. Il a clairement vu que les flammes se trouvaient à environ deux mètres de la façade. Après un aller-retour au dépôt des pompiers, il est revenu sur les lieux de l'incendie et ...
 
 Personne deux
-L'intéressé dispose d'un atelier en face de la scierie. Selon lui et la copie de la carte de timbrage de son amie, il a quitté son travail à 19h15 pour aller la chercher, à son travail. En sortant du bureau, il a vu des flammes qui se situaient derrière le local technique de la scierie. Depuis son emplacement, il ne voyait pas le foyer mais uniquement les flammes qui passaient au-dessus dudit local. Il ne s'est pas trop inquiété de la situation, pensant qu'un employé devait être à proximité. Selon lui, les flammes ne touchaient pas la paroi du bâtiment principal mais devaient être à une distance estimée à trois mètres. En rentrant à son domicile, soit environ trente minutes plus tard, il n'a rien constaté de spécial. Il n'a pas vu si les flammes étaient toujours actives.`;
+L'intéressé dispose d'un atelier en face de la scierie. Selon lui et la copie de la carte de timbrage de son amie, il a quitté son travail à 19h15 pour aller la chercher, à son travail. En sortant du bureau, il a vu des flammes qui se situaient derrière le local technique de la scierie. Depuis son emplacement, il ne voyait pas le foyer mais uniquement les flammes qui passaient au-dessus dudit local. Il ne s'est pas trop inquiété de la situation, pensant qu'un employé devait être à proximité. Selon lui, les flammes ne touchaient pas la paroi du bâtiment principal mais devaient être à une distance estimée à trois mètres. En rentrant à son domicile, soit environ trente minutes plus tard, il n'a rien constaté de spécial. Il n'a pas vu si les flammes étaient toujours actives.
+`;
 
 const paragraphes = TEXTE.split("\n\n");
 let indexParagraphe = 0;
@@ -113,13 +115,16 @@ function envoyerResultat(){
   if(!nom){ alert("Veuillez entrer votre nom."); return; }
   const r = calculerPenalites();
   fetch("https://script.google.com/macros/s/AKfycbxXhszJE-OEUe3yAdHpT6JdwyD_qJKc_vC3JnMnmsktvFKMpr3G7g_d8Nk_58oG9rpB/exec", {
-    method: "POST", mode: "cors", headers: {"Content-Type":"application/json"},
+    method: "POST",
+    mode: "no-cors",
+    headers: {"Content-Type":"application/json"},
     body: JSON.stringify({nom: nom, frappes: r.frappe, penalites: r.penalites, pourcentage: r.pourcentage, mention: r.mention})
   })
-  .then(response => response.json())
-  .then(data => { if(data.status==="ok"){ alert("Résultats envoyés !"); } else { alert("Erreur côté serveur : " + data.message); } })
-  .catch(err=>alert("Erreur envoi: "+err));
+  .then(()=>{ alert("Résultats envoyés !"); })
+  .catch(err=>{ alert("Erreur envoi: "+err); });
 }
 </script>
 </body>
 </html>
+
+
