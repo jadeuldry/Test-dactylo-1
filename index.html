@@ -126,7 +126,7 @@ async function envoyer(){
     `Nom: ${nom}, Frappe: ${totalFrappe}, Pénalités: ${penalites}, % erreur: ${pourcentage}%, Mention: ${mention}`;
 
   try{
-    await fetch('https://script.google.com/macros/s/AKfycbx55SWLT8lAFiTeTWENPDxOc5XJBOEViBhEv8qVSiO1-Zq1sg0-HqjhlCkEdFpTpPtn/exec',{
+    await fetch('https://script.google.com/macros/s/AKfycbzlb6mNFdy7XCwVL_30yv93j6zA-h_wlFh9yuzLyF0WOWTVIryfJxcYTUEDwLJ_YYgc/exec',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
